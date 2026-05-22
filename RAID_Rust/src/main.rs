@@ -1,5 +1,7 @@
 use rand::prelude::*;
 
+// https://www.techtarget.com/searchstorage/answer/RAID-types-and-benefits-explained
+
 fn main() {
     let mut raid_0 = match RaidFactory::create(RaidType::Zero) {
         Ok(raid) => raid,
@@ -33,7 +35,28 @@ fn main() {
 
     raid_1.get_disks_mut()[0].extend(&disk_values[0..mid]);
 
-    // Clone the data before extending to avoid borrowing conflict
+    let disk_0_copy = raid_1.get_disk(0).clone();
+    raid_1.get_disks_mut()[1].extend(&disk_0_copy);
+
+    println!("------------- RAID ONE -------------");
+    raid_1.print_data(0);
+    raid_1.print_data(1);
+
+    raid_1.corrupt_data();
+
+    raid_1.print_data(0);
+    raid_1.print_data(1);
+
+    let mut raid_5 = match RaidFactory::create(RaidType::Five, 3) {
+        Ok(raid) => raid,
+        Err(e) => {
+            eprintln!("Failed to create RAID: {}", e);
+            return;
+        }
+    };
+
+    raid_1.get_disks_mut()[0].extend(&disk_values[0..mid]);
+
     let disk_0_copy = raid_1.get_disk(0).clone();
     raid_1.get_disks_mut()[1].extend(&disk_0_copy);
 
@@ -48,64 +71,52 @@ fn main() {
 }
 
 trait DataStructure {
-    fn print_data(&self, disk: usize);
+    fn print_data(&self, disk_number: usize);
     fn get_disks_mut(&mut self) -> &mut Vec<Vec<u16>>;
+    fn get_parity_disks_mut(&mut self) -> &mut Vec<Vec<u16>>;
     fn get_disk(&self, disk: usize) -> &Vec<u16>;
     fn corrupt_data(&mut self) -> &mut Vec<Vec<u16>>;
+    fn create_parity_disk(&mut self) -> &mut Vec<Vec<u16>>;
 }
 
-struct Zero {
+struct RaidData {
+    raid_type: RaidType,
     disks: Vec<Vec<u16>>,
+    parity_disks: Vec<Vec<u16>>,
 }
 
-struct One {
-    disks: Vec<Vec<u16>>,
-}
-
-impl Zero {
+impl RaidData {
     const MIN_DISKS: usize = 2;
 
-    fn new(disks: u8) -> Result<Self, String> {
+    fn new(raid_type: RaidType, disks: u8) -> Result<Self, String> {
         if (disks as usize) < Self::MIN_DISKS {
             return Err(format!(
-                "RAID 0 requires at least {} disks, got {}",
+                "RAID requires at least {} disks, got {}",
                 Self::MIN_DISKS,
                 disks
             ));
         }
-        Ok(Zero {
+        Ok(RaidData {
+            raid_type,
             disks: vec![Vec::new(); disks as usize],
+            parity_disks: vec![Vec::new(); disks as usize],
         })
     }
 }
 
-impl One {
-    const MIN_DISKS: usize = 2;
-
-    fn new(disks: u8) -> Result<Self, String> {
-        if (disks as usize) < Self::MIN_DISKS {
-            return Err(format!(
-                "RAID 0 requires at least {} disks, got {}",
-                Self::MIN_DISKS,
-                disks
-            ));
-        }
-        Ok(One {
-            disks: vec![Vec::new(); disks as usize],
-        })
-    }
-}
-
-impl DataStructure for Zero {
-    // Divide data into disks
-    fn print_data(&self, disk: usize) {
-        if let Some(disk) = self.disks.get(disk) {
-            println!("{:?}", disk);
+impl DataStructure for RaidData {
+    fn print_data(&self, disk_number: usize) {
+        if let Some(disk) = self.disks.get(disk_number) {
+            println!("Disk {}:{:?}", disk_number, disk);
         }
     }
 
     fn get_disks_mut(&mut self) -> &mut Vec<Vec<u16>> {
         &mut self.disks
+    }
+
+    fn get_parity_disks_mut(&mut self) -> &mut Vec<Vec<u16>> {
+        &mut self.parity_disks
     }
 
     fn get_disk(&self, disk: usize) -> &Vec<u16> {
@@ -125,42 +136,22 @@ impl DataStructure for Zero {
 
         &mut self.disks
     }
-}
 
-impl DataStructure for One {
-    // Duplicate data into disks
-    fn print_data(&self, disk: usize) {
-        if let Some(disk) = self.disks.get(disk) {
-            println!("{:?}", disk);
-        }
-    }
-
-    fn get_disks_mut(&mut self) -> &mut Vec<Vec<u16>> {
-        &mut self.disks
-    }
-
-    fn get_disk(&self, disk: usize) -> &Vec<u16> {
-        &self.disks[disk]
-    }
-
-    fn corrupt_data(&mut self) -> &mut Vec<Vec<u16>> {
+    fn create_parity_disk(&mut self) -> &mut Vec<Vec<u16>> {
         let disks = (self.disks.len()) as u16;
-        let random_disk: usize = rand::random_range(0..disks) as usize;
-
-        if let Some(disk) = self.disks.get_mut(random_disk) {
-            let disk_size = disk.len();
-            let random_position = rand::random_range(0..disk_size);
-
-            disk[random_position] = 0;
+        if let Some(parity_disk) = self.parity_disks.get_mut(0) {
+            for x in 0..disks - 1 {
+                parity_disk[x] = 
+            }
         }
-
-        &mut self.disks
     }
 }
 
+#[derive(Clone, Copy)]
 enum RaidType {
     Zero,
     One,
+    Five,
 }
 
 struct RaidFactory;
@@ -175,9 +166,6 @@ fn generate_data(amount: u16) -> Vec<u16> {
 
 impl RaidFactory {
     fn create(raid_type: RaidType) -> Result<Box<dyn DataStructure>, String> {
-        match raid_type {
-            RaidType::Zero => Ok(Box::new(Zero::new(2)?)),
-            RaidType::One => Ok(Box::new(One::new(2)?)),
-        }
+        Ok(Box::new(RaidData::new(raid_type, 2)?))
     }
 }
