@@ -3,7 +3,7 @@ use rand::prelude::*;
 // https://www.techtarget.com/searchstorage/answer/RAID-types-and-benefits-explained
 
 fn main() {
-    let mut raid_0 = match RaidFactory::create(RaidType::Zero) {
+    let mut raid_0 = match RaidFactory::create(RaidType::Zero, None) {
         Ok(raid) => raid,
         Err(e) => {
             eprintln!("Failed to create RAID: {}", e);
@@ -25,7 +25,7 @@ fn main() {
     raid_0.print_data(0);
     raid_0.print_data(1);
 
-    let mut raid_1 = match RaidFactory::create(RaidType::One) {
+    let mut raid_1 = match RaidFactory::create(RaidType::One, None) {
         Ok(raid) => raid,
         Err(e) => {
             eprintln!("Failed to create RAID: {}", e);
@@ -47,7 +47,7 @@ fn main() {
     raid_1.print_data(0);
     raid_1.print_data(1);
 
-    let mut raid_5 = match RaidFactory::create(RaidType::Five, 3) {
+    let mut raid_5 = match RaidFactory::create(RaidType::Five, Some(3)) {
         Ok(raid) => raid,
         Err(e) => {
             eprintln!("Failed to create RAID: {}", e);
@@ -55,19 +55,19 @@ fn main() {
         }
     };
 
-    raid_1.get_disks_mut()[0].extend(&disk_values[0..mid]);
+    raid_5.get_disks_mut()[0].extend(&disk_values[0..mid]);
 
-    let disk_0_copy = raid_1.get_disk(0).clone();
-    raid_1.get_disks_mut()[1].extend(&disk_0_copy);
+    let disk_0_copy = raid_5.get_disk(0).clone();
+    raid_5.get_disks_mut()[1].extend(&disk_0_copy);
 
-    println!("------------- RAID ONE -------------");
-    raid_1.print_data(0);
-    raid_1.print_data(1);
+    println!("------------- RAID FIVE -------------");
+    raid_5.print_data(0);
+    raid_5.print_data(1);
 
-    raid_1.corrupt_data();
+    raid_5.corrupt_data();
 
-    raid_1.print_data(0);
-    raid_1.print_data(1);
+    raid_5.print_data(0);
+    raid_5.print_data(1);
 }
 
 trait DataStructure {
@@ -129,21 +129,17 @@ impl DataStructure for RaidData {
 
         if let Some(disk) = self.disks.get_mut(random_disk) {
             let disk_size = disk.len();
-            let random_position = rand::random_range(0..disk_size);
-
-            disk[random_position] = 0;
+            if disk_size > 0 {
+                let random_position = rand::random_range(0..disk_size);
+                disk[random_position] = 0;
+            }
         }
 
         &mut self.disks
     }
 
     fn create_parity_disk(&mut self) -> &mut Vec<Vec<u16>> {
-        let disks = (self.disks.len()) as u16;
-        if let Some(parity_disk) = self.parity_disks.get_mut(0) {
-            for x in 0..disks - 1 {
-                parity_disk[x] = 
-            }
-        }
+        &mut self.parity_disks
     }
 }
 
@@ -165,7 +161,8 @@ fn generate_data(amount: u16) -> Vec<u16> {
 }
 
 impl RaidFactory {
-    fn create(raid_type: RaidType) -> Result<Box<dyn DataStructure>, String> {
-        Ok(Box::new(RaidData::new(raid_type, 2)?))
+    fn create(raid_type: RaidType, num_disks: Option<u8>) -> Result<Box<dyn DataStructure>, String> {
+        let disk_count = num_disks.unwrap_or(2);
+        Ok(Box::new(RaidData::new(raid_type, disk_count)?))
     }
 }
