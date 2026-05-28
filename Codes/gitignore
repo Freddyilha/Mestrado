@@ -1,0 +1,5 @@
+workspace/target/
+workspace/**/*.o
+workspace/**/*.out
+workspace/**/*.a
+workspace/**/*.so

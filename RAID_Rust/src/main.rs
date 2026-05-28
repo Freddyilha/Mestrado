@@ -22,6 +22,7 @@ fn main() {
 
     raid_0.corrupt_data();
 
+    println!("- one corruption -");
     raid_0.print_data(0);
     raid_0.print_data(1);
 
@@ -44,30 +45,31 @@ fn main() {
 
     raid_1.corrupt_data();
 
+    println!("- one corruption -");
     raid_1.print_data(0);
     raid_1.print_data(1);
 
-    let mut raid_5 = match RaidFactory::create(RaidType::Five, Some(3)) {
-        Ok(raid) => raid,
-        Err(e) => {
-            eprintln!("Failed to create RAID: {}", e);
-            return;
-        }
-    };
-
-    raid_5.get_disks_mut()[0].extend(&disk_values[0..mid]);
-
-    let disk_0_copy = raid_5.get_disk(0).clone();
-    raid_5.get_disks_mut()[1].extend(&disk_0_copy);
-
-    println!("------------- RAID FIVE -------------");
-    raid_5.print_data(0);
-    raid_5.print_data(1);
-
-    raid_5.corrupt_data();
-
-    raid_5.print_data(0);
-    raid_5.print_data(1);
+    // let mut raid_5 = match RaidFactory::create(RaidType::Five, Some(3)) {
+    //     Ok(raid) => raid,
+    //     Err(e) => {
+    //         eprintln!("Failed to create RAID: {}", e);
+    //         return;
+    //     }
+    // };
+    //
+    // raid_5.get_disks_mut()[0].extend(&disk_values[0..mid]);
+    //
+    // let disk_0_copy = raid_5.get_disk(0).clone();
+    // raid_5.get_disks_mut()[1].extend(&disk_0_copy);
+    //
+    // println!("------------- RAID FIVE -------------");
+    // raid_5.print_data(0);
+    // raid_5.print_data(1);
+    //
+    // raid_5.corrupt_data();
+    //
+    // raid_5.print_data(0);
+    // raid_5.print_data(1);
 }
 
 trait DataStructure {

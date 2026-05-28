@@ -1,0 +1,37 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies and C++ toolchain
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    build-essential \
+    cmake \
+    ninja-build \
+    clang \
+    clang-format \
+    clang-tidy \
+    lldb \
+    gdb \
+    valgrind \
+    libstdc++-13-dev \
+    pkg-config \
+    gosu \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pre-install Rust as root into a shared location
+ENV RUSTUP_HOME=/opt/rustup
+ENV CARGO_HOME=/opt/cargo
+ENV PATH="/opt/cargo/bin:${PATH}"
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable \
+    && rustup component add rustfmt clippy rust-analyzer rust-src \
+    && chmod -R a+rx /opt/rustup /opt/cargo
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["/bin/bash"]
