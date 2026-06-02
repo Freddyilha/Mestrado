@@ -4,3 +4,4 @@ Codes/workspace/**/*.out
 Codes/workspace/**/*.a
 Codes/workspace/**/*.so
 RAID_Rust/target/
+sonarQube/projects/.scannerwork/

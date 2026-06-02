@@ -36,9 +36,24 @@ services:
       SONAR_HOST_URL: http://sonarqube:9000
       SONAR_TOKEN: ${SONAR_TOKEN}
     volumes:
-      - ./projects:/usr/src
+      - ./projects:/usr/src:Z
     working_dir: /usr/src
-    entrypoint: ["tail", "-f", "/dev/null"]
+    user: root
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        chmod -R 777 /usr/src
+        tail -f /dev/null
+
+  # lizard:
+  #   image: python:3.12-alpine
+  #
+  # cppcheck:
+  #   image: cppcheck/cppcheck
+  #
+  # clang-tidy:
+  #   image: silkeh/clang
 
 volumes:
   postgres_data:
