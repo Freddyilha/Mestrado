@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: rust-cpp-dev
     volumes:
-      - ./workspace:/workspace
+      - ./workspace:/workspace:Z
     working_dir: /workspace
     stdin_open: true
     tty: true

@@ -17,11 +17,10 @@ RUN apt-get update && apt-get install -y \
     valgrind \
     libstdc++-13-dev \
     pkg-config \
-    gosu \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Pre-install Rust as root into a shared location
+# Install Rust into a shared location accessible by any user
 ENV RUSTUP_HOME=/opt/rustup
 ENV CARGO_HOME=/opt/cargo
 ENV PATH="/opt/cargo/bin:${PATH}"
@@ -30,8 +29,6 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --de
     && rustup component add rustfmt clippy rust-analyzer rust-src \
     && chmod -R a+rx /opt/rustup /opt/cargo
 
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+WORKDIR /workspace
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["/bin/bash"]

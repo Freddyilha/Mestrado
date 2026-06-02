@@ -1,4 +1,6 @@
-.PHONY: up down build exec
+DOCKER_EXEC = docker compose exec -u $(shell id -u):$(shell id -g) dev
+
+.PHONY: up down build exec cpp rust
 
 up:
 	@mkdir -p workspace
@@ -12,22 +14,20 @@ build:
 	@docker compose build
 
 exec:
-	@docker compose exec dev bash
-
-run:
-	@docker compose exec dev bash -c "$(CMD)"
+	@$(DOCKER_EXEC) bash
 
 cpp:
-	@docker compose exec dev bash -c "g++ -std=c++23 -O2 $(FILE).cpp -o $(FILE) && ./$(FILE)"
+	@$(DOCKER_EXEC) bash -c "g++ -std=c++23 -O2 $(FILE).cpp -o $(FILE) && ./$(FILE)"
 
 rust:
-	@docker compose exec dev bash -c "\
-		if [ ! -f /tmp/runner/Cargo.toml ]; then cargo new /tmp/runner --name runner 2>/dev/null; fi && \
-		cp /workspace/$(FILE).rs /tmp/runner/src/main.rs && \
-		cd /tmp/runner && \
-		grep -E '^(extern crate|use )' /tmp/runner/src/main.rs | \
-			grep -oE '^(extern crate |use )[a-z_0-9]+' | \
-			awk '{print \$$2}' | \
-			grep -vE '^(std|core|alloc|runner)$$' | sort -u | \
-			xargs -I{} sh -c 'grep -q \"{}\" Cargo.toml || cargo add {}' && \
-		cargo run"
+	@$(DOCKER_EXEC) bash -c '\
+		export CARGO_HOME=/tmp/cargo && \
+		export RUSTUP_HOME=/tmp/rustup && \
+		export RUNNER_DIR=/workspace/.runner && \
+		mkdir -p $$CARGO_HOME $$RUSTUP_HOME && \
+		rm -rf $$RUNNER_DIR && \
+		cargo new $$RUNNER_DIR --name runner 2>/dev/null && \
+		cp /workspace/$(FILE).rs $$RUNNER_DIR/src/main.rs && \
+		cd $$RUNNER_DIR && \
+		cargo run \
+	'
