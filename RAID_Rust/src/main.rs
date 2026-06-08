@@ -49,31 +49,37 @@ fn main() {
     raid_1.print_data(0);
     raid_1.print_data(1);
 
-    // let mut raid_5 = match RaidFactory::create(RaidType::Five, Some(3)) {
-    //     Ok(raid) => raid,
-    //     Err(e) => {
-    //         eprintln!("Failed to create RAID: {}", e);
-    //         return;
-    //     }
-    // };
-    //
-    // raid_5.get_disks_mut()[0].extend(&disk_values[0..mid]);
-    //
-    // let disk_0_copy = raid_5.get_disk(0).clone();
-    // raid_5.get_disks_mut()[1].extend(&disk_0_copy);
-    //
-    // println!("------------- RAID FIVE -------------");
-    // raid_5.print_data(0);
-    // raid_5.print_data(1);
-    //
-    // raid_5.corrupt_data();
-    //
-    // raid_5.print_data(0);
-    // raid_5.print_data(1);
+    let mut raid_5 = match RaidFactory::create(RaidType::Five, Some(2)) {
+        Ok(raid) => raid,
+        Err(e) => {
+            eprintln!("Failed to create RAID: {}", e);
+            return;
+        }
+    };
+
+
+    let disk_values = generate_data(20);
+    let mid = disk_values.len() / 2;
+    raid_5.get_disks_mut()[0].extend(&disk_values[0..mid]);
+    raid_5.get_disks_mut()[1].extend(&disk_values[mid..]);
+
+    println!("------------- RAID FIVE -------------");
+    raid_5.print_data(0);
+    raid_5.print_data(1);
+
+    raid_5.create_parity_disk();
+    raid_5.print_parity_data(0);
+
+    raid_5.corrupt_data();
+
+    raid_5.print_data(0);
+    raid_5.print_data(1);
+
 }
 
 trait DataStructure {
     fn print_data(&self, disk_number: usize);
+    fn print_parity_data(&self, disk_number: usize);
     fn get_disks_mut(&mut self) -> &mut Vec<Vec<u16>>;
     fn get_parity_disks_mut(&mut self) -> &mut Vec<Vec<u16>>;
     fn get_disk(&self, disk: usize) -> &Vec<u16>;
@@ -113,6 +119,12 @@ impl DataStructure for RaidData {
         }
     }
 
+    fn print_parity_data(&self, disk_number: usize) {
+        if let Some(parity_disk) = self.parity_disks.get(disk_number) {
+            println!("Parity Disk {}:{:?}", disk_number, parity_disk);
+        }
+    }
+
     fn get_disks_mut(&mut self) -> &mut Vec<Vec<u16>> {
         &mut self.disks
     }
@@ -141,6 +153,26 @@ impl DataStructure for RaidData {
     }
 
     fn create_parity_disk(&mut self) -> &mut Vec<Vec<u16>> {
+        if self.disks.is_empty() {
+            return &mut self.parity_disks;
+        }
+
+        let max_len = self.disks.iter().map(|v| v.len()).max().unwrap_or(0);
+        let mut new_parity_disk = Vec::with_capacity(max_len);
+
+        for i in 0..max_len {
+            let parity = self.disks.iter()
+                .filter_map(|v| v.get(i))
+                .fold(0, |acc, &val| acc ^ val);
+
+            new_parity_disk.push(parity);
+        }
+
+        println!("new_parity_disk {:?}", new_parity_disk);
+
+        self.parity_disks.push(new_parity_disk);
+
+        println!("parity_disks[0] {:?}", self.parity_disks[0]);
         &mut self.parity_disks
     }
 }
