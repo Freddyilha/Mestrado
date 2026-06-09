@@ -84,6 +84,7 @@ trait DataStructure {
     fn get_parity_disks_mut(&mut self) -> &mut Vec<Vec<u16>>;
     fn get_disk(&self, disk: usize) -> &Vec<u16>;
     fn corrupt_data(&mut self) -> &mut Vec<Vec<u16>>;
+    fn fix_data(&mut self) -> &mut Vec<Vec<u16>>;
     fn create_parity_disk(&mut self) -> &mut Vec<Vec<u16>>;
 }
 
@@ -107,7 +108,7 @@ impl RaidData {
         Ok(RaidData {
             raid_type,
             disks: vec![Vec::new(); disks as usize],
-            parity_disks: vec![Vec::new(); disks as usize],
+            parity_disks: Vec::new(),
         })
     }
 }
@@ -152,6 +153,13 @@ impl DataStructure for RaidData {
         &mut self.disks
     }
 
+    fn fix_data(&mut self) -> &mut Vec<Vec<u16>> {
+
+
+
+        &mut self.disks
+    }
+
     fn create_parity_disk(&mut self) -> &mut Vec<Vec<u16>> {
         if self.disks.is_empty() {
             return &mut self.parity_disks;
@@ -167,12 +175,8 @@ impl DataStructure for RaidData {
 
             new_parity_disk.push(parity);
         }
-
-        println!("new_parity_disk {:?}", new_parity_disk);
-
         self.parity_disks.push(new_parity_disk);
 
-        println!("parity_disks[0] {:?}", self.parity_disks[0]);
         &mut self.parity_disks
     }
 }
