@@ -49,7 +49,7 @@ fn main() {
     raid_1.print_data(0);
     raid_1.print_data(1);
 
-    let mut raid_5 = match RaidFactory::create(RaidType::Five, Some(2)) {
+    let mut raid_4 = match RaidFactory::create(RaidType::Four, Some(2)) {
         Ok(raid) => raid,
         Err(e) => {
             eprintln!("Failed to create RAID: {}", e);
@@ -60,20 +60,20 @@ fn main() {
 
     let disk_values = generate_data(20);
     let mid = disk_values.len() / 2;
-    raid_5.get_disks_mut()[0].extend(&disk_values[0..mid]);
-    raid_5.get_disks_mut()[1].extend(&disk_values[mid..]);
+    raid_4.get_disks_mut()[0].extend(&disk_values[0..mid]);
+    raid_4.get_disks_mut()[1].extend(&disk_values[mid..]);
 
-    println!("------------- RAID FIVE -------------");
-    raid_5.print_data(0);
-    raid_5.print_data(1);
+    println!("------------- RAID FOUR -------------");
+    raid_4.print_data(0);
+    raid_4.print_data(1);
 
-    raid_5.create_parity_disk();
-    raid_5.print_parity_data(0);
+    raid_4.create_parity_disk();
+    raid_4.print_parity_data(0);
 
-    raid_5.corrupt_data();
+    raid_4.corrupt_data();
 
-    raid_5.print_data(0);
-    raid_5.print_data(1);
+    raid_4.print_data(0);
+    raid_4.print_data(1);
 
 }
 
@@ -185,7 +185,7 @@ impl DataStructure for RaidData {
 enum RaidType {
     Zero,
     One,
-    Five,
+    Four,
 }
 
 struct RaidFactory;
