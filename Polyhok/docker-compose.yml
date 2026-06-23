@@ -2,6 +2,7 @@ services:
   poly_hok:
     build: .
     volumes:
-      - ./codes:/workspace/poly_hok/codes:z
+      - ./:/workspace/poly_hok:z
+    working_dir: /workspace/poly_hok
     stdin_open: true
     tty: true
