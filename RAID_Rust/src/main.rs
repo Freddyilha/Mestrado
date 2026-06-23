@@ -84,6 +84,7 @@ trait DataStructure {
     fn get_parity_disks_mut(&mut self) -> &mut Vec<Vec<u16>>;
     fn get_disk(&self, disk: usize) -> &Vec<u16>;
     fn corrupt_data(&mut self) -> &mut Vec<Vec<u16>>;
+    fn corrupt_disk(&mut self) -> &mut Vec<Vec<u16>>;
     fn fix_data(&mut self) -> &mut Vec<Vec<u16>>;
     fn create_parity_disk(&mut self) -> &mut Vec<Vec<u16>>;
 }
@@ -153,9 +154,20 @@ impl DataStructure for RaidData {
         &mut self.disks
     }
 
+    fn corrupt_disk(&mut self) -> &mut Vec<Vec<u16>> {
+        let disks = (self.disks.len()) as u16;
+        let random_disk: usize = rand::random_range(0..disks) as usize;
+
+        if let Some(disk) = self.disks.get_mut(random_disk) {
+            for value in disk {
+                *value = 0;
+            }
+        }
+
+        &mut self.disks
+    }
+
     fn fix_data(&mut self) -> &mut Vec<Vec<u16>> {
-
-
 
         &mut self.disks
     }
