@@ -1,0 +1,7 @@
+services:
+  poly_hok:
+    build: .
+    volumes:
+      - ./codes:/workspace/poly_hok/codes:z
+    stdin_open: true
+    tty: true
