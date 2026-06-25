@@ -75,6 +75,16 @@ fn main() {
     raid_4.print_data(0);
     raid_4.print_data(1);
 
+    raid_4.search_for_corruption();
+
+    raid_4.print_data(0);
+    raid_4.print_data(1);
+
+    // raid_4.corrupt_disk();
+    //
+    // raid_4.print_data(0);
+    // raid_4.print_data(1);
+
 }
 
 trait DataStructure {
@@ -85,8 +95,10 @@ trait DataStructure {
     fn get_disk(&self, disk: usize) -> &Vec<u16>;
     fn corrupt_data(&mut self) -> &mut Vec<Vec<u16>>;
     fn corrupt_disk(&mut self) -> &mut Vec<Vec<u16>>;
-    fn fix_data(&mut self) -> &mut Vec<Vec<u16>>;
+    fn search_for_corruption(&mut self) -> &mut Vec<Vec<u16>>;
+    fn fix_corruption(&mut self, corrupted_index: usize, corrupted_element: usize);
     fn create_parity_disk(&mut self) -> &mut Vec<Vec<u16>>;
+    fn _find_next_corruption(&self) -> Option<(usize, usize)>;
 }
 
 struct RaidData {
@@ -167,9 +179,49 @@ impl DataStructure for RaidData {
         &mut self.disks
     }
 
-    fn fix_data(&mut self) -> &mut Vec<Vec<u16>> {
+    fn _find_next_corruption(&self) -> Option<(usize, usize)> {
+        for i in 0..self.disks.len() {
+            if let Some(disk) = self.disks.get(i) {
+                for j in 0..disk.len() {
+                    if disk[j] == 0 {
+                        println!("Found corruption at i:{}-j:{}",i ,j);
+                        return Some((i, j));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+
+
+    fn search_for_corruption(&mut self) -> &mut Vec<Vec<u16>> {
+        while let Some((i, j)) = self._find_next_corruption() {
+            self.fix_corruption(i, j);
+        }
 
         &mut self.disks
+    }
+
+    fn fix_corruption(&mut self, corrupted_index: usize, corrupted_element: usize) {
+        let all_disks: Vec<&Vec<u16>> = self.disks.iter().chain(&self.parity_disks).collect();
+
+        println!("All disks {:?}", all_disks);
+
+        let recovered_value = all_disks.iter()
+            .enumerate()
+            .filter(|&(idx, _)| idx != corrupted_index)
+            .filter_map(|(_, v)| v.get(corrupted_element))
+            .fold(0, |acc, &val| acc ^ val);
+
+        println!("recovered_value {}", recovered_value);
+
+        if corrupted_index < self.disks.len() {
+            self.disks[corrupted_index][corrupted_element] = recovered_value;
+        } else {
+            let p_idx = corrupted_index - self.disks.len();
+            self.parity_disks[p_idx][corrupted_element] = recovered_value;
+        }
     }
 
     fn create_parity_disk(&mut self) -> &mut Vec<Vec<u16>> {
